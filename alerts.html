@@ -43,7 +43,7 @@ p {
 <script>
 async function loadAlerts() {
   try {
-    const res = await fetch("https://api.vedur.is/cap/v1/capbroker/active/feed/met");
+    const res = await fetch("https://api.allorigins.win/raw?url=https://api.vedur.is/cap/v1/capbroker/active/feed/met");
     const text = await res.text();
 
     const parser = new DOMParser();
