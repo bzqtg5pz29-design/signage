@@ -2,83 +2,88 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Weather Alerts</title>
-
+<title>IMO Alerts</title>
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: black;
-}
-
-#alert {
-  display: none;
-  padding: 20px;
-  color: white;
-}
-
-.yellow { background: #f5c542; color: black; }
-.orange { background: #f57c00; }
-.red { background: #d32f2f; }
-
-h1 {
-  margin: 0 0 10px 0;
-  font-size: 28px;
-}
-
-p {
-  margin: 0;
-  font-size: 20px;
-}
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: white;
+  }
+  #box {
+    padding: 30px;
+  }
+  .yellow { background: #f5c542; color: black; }
+  .orange { background: #f57c00; color: white; }
+  .red { background: #d32f2f; color: white; }
+  h1 {
+    margin: 0 0 12px 0;
+    font-size: 36px;
+  }
+  p {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
 </style>
 </head>
-
 <body>
-
-<div id="alert">
-  <h1 id="title"></h1>
-  <p id="desc"></p>
+<div id="box">
+  <h1 id="title">Loading weather alerts…</h1>
+  <p id="desc">Please wait.</p>
 </div>
 
 <script>
 async function loadAlerts() {
+  const titleEl = document.getElementById("title");
+  const descEl = document.getElementById("desc");
+  const box = document.getElementById("box");
+
   try {
-    const res = await fetch("https://api.allorigins.win/raw?url=https://api.vedur.is/cap/v1/capbroker/active/feed/met");
+    titleEl.textContent = "Checking IMO alerts…";
+    descEl.textContent = "Fetching latest data.";
+
+    const proxyUrl = "https://api.allorigins.win/raw?url=" +
+      encodeURIComponent("https://api.vedur.is/cap/v1/capbroker/active/feed/met");
+
+    const res = await fetch(proxyUrl);
     const text = await res.text();
 
     const parser = new DOMParser();
     const xml = parser.parseFromString(text, "text/xml");
 
-    const alert = xml.querySelector("entry");
+    const firstEntry = xml.querySelector("entry");
 
-    if (!alert) {
-      document.getElementById("alert").style.display = "none";
+    if (!firstEntry) {
+      box.className = "";
+      titleEl.textContent = "No weather alerts in effect";
+      descEl.textContent = "No active IMO alert was found right now.";
       return;
     }
 
-    const title = alert.querySelector("title")?.textContent || "Weather Alert";
-    const desc = alert.querySelector("summary")?.textContent || "";
+    const title = firstEntry.querySelector("title")?.textContent || "Weather alert";
+    const summary = firstEntry.querySelector("summary")?.textContent || "Alert found, but no summary available.";
 
-    let level = "yellow";
-    if (title.toLowerCase().includes("orange")) level = "orange";
-    if (title.toLowerCase().includes("red")) level = "red";
+    const lower = title.toLowerCase();
+    box.className = "";
+    if (lower.includes("red")) box.classList.add("red");
+    else if (lower.includes("orange")) box.classList.add("orange");
+    else box.classList.add("yellow");
 
-    const box = document.getElementById("alert");
-    box.className = level;
-    box.style.display = "block";
+    titleEl.textContent = title;
+    descEl.textContent = summary;
 
-    document.getElementById("title").textContent = title;
-    document.getElementById("desc").textContent = desc;
-
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    box.className = "";
+    titleEl.textContent = "Error loading alerts";
+    descEl.textContent = "The page loaded, but the alert feed could not be fetched.\n\n" + err;
+    console.error(err);
   }
 }
 
-// refresh every 5 minutes
 loadAlerts();
 setInterval(loadAlerts, 300000);
 </script>
-
 </body>
 </html>
