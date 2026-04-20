@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Weather Alerts</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: black;
+}
+
+#alert {
+  display: none;
+  padding: 20px;
+  color: white;
+}
+
+.yellow { background: #f5c542; color: black; }
+.orange { background: #f57c00; }
+.red { background: #d32f2f; }
+
+h1 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+}
+
+p {
+  margin: 0;
+  font-size: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="alert">
+  <h1 id="title"></h1>
+  <p id="desc"></p>
+</div>
+
+<script>
+async function loadAlerts() {
+  try {
+    const res = await fetch("https://api.vedur.is/cap/v1/capbroker/active/feed/met");
+    const text = await res.text();
+
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, "text/xml");
+
+    const alert = xml.querySelector("entry");
+
+    if (!alert) {
+      document.getElementById("alert").style.display = "none";
+      return;
+    }
+
+    const title = alert.querySelector("title")?.textContent || "Weather Alert";
+    const desc = alert.querySelector("summary")?.textContent || "";
+
+    let level = "yellow";
+    if (title.toLowerCase().includes("orange")) level = "orange";
+    if (title.toLowerCase().includes("red")) level = "red";
+
+    const box = document.getElementById("alert");
+    box.className = level;
+    box.style.display = "block";
+
+    document.getElementById("title").textContent = title;
+    document.getElementById("desc").textContent = desc;
+
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// refresh every 5 minutes
+loadAlerts();
+setInterval(loadAlerts, 300000);
+</script>
+
+</body>
+</html>
